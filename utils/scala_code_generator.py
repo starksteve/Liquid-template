@@ -248,14 +248,19 @@ Please fix the issues and return the corrected JSON response. Return ONLY the JS
         elif "```" in json_text:
             json_text = json_text.split("```")[1].split("```")[0].strip()
 
+        # Remove invalid control characters that break json.loads
+        # Keep \n \r \t (0x0a, 0x0d, 0x09) but strip others (0x00-0x08, 0x0b-0x0c, 0x0e-0x1f)
+        json_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', json_text)
+
         try:
             parsed = json.loads(json_text)
         except json.JSONDecodeError:
             # Try to find JSON object in the text
             match = re.search(r'\{[\s\S]*\}', json_text)
             if match:
+                cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', match.group())
                 try:
-                    parsed = json.loads(match.group())
+                    parsed = json.loads(cleaned)
                 except json.JSONDecodeError as e:
                     raise ValueError(f"Could not parse JSON from LLM response: {e}")
             else:
@@ -274,3 +279,4 @@ Please fix the issues and return the corrected JSON response. Return ONLY the JS
             "full_code": full_code,
             "sample_output": sample_output,
         }
+

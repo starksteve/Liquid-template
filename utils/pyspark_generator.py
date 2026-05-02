@@ -192,10 +192,16 @@ Respond with ONLY this JSON structure (no prose, no markdown outside the JSON):
         raw_json = re.sub(r"^```[a-zA-Z]*\n?", "", raw_json)
         raw_json = re.sub(r"\n?```$", "", raw_json)
 
+        # Remove invalid control characters
+        raw_json = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', raw_json)
+
         try:
             data = json.loads(raw_json)
+            full_code = data.get("full_code", response_text)
+            if isinstance(full_code, str):
+                full_code = full_code.replace("\\n", "\n").replace("\\t", "\t")
             return {
-                "full_code": data.get("full_code", response_text),
+                "full_code": full_code,
                 "per_column_code": data.get("per_column_code", {}),
                 "sample_output": data.get("sample_output", []),
             }

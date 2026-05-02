@@ -1001,7 +1001,7 @@ def main():
                 target_columns=target_columns,
                 transformation_logic=transformation_logic,
                 crosswalk_tables=crosswalk_info,
-                quality_rules=st.session_state.get("quality_result", {}).get("rules_summary"),
+                quality_rules=(st.session_state.get("quality_result") or {}).get("rules_summary"),
                 pipeline_name=pipeline_name,
             )
             st.session_state["pipeline_readme"] = readme_md
