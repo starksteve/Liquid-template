@@ -894,7 +894,7 @@ def main():
                 })
 
         # ── Step A: Scala ────────────────────────────────────────────
-        status_text.text("🔄 [1/4] Generating Scala/Spark code…")
+        status_text.text("🔄 [1/3] Generating Scala/Spark code…")
         try:
             generator = ScalaCodeGenerator(max_iterations=max_iterations)
             result = generator.generate_scala_code(
@@ -915,7 +915,7 @@ def main():
         progress_bar.progress(0.25)
 
         # ── Step B: PySpark ──────────────────────────────────────────
-        status_text.text("🔄 [2/4] Generating PySpark code…")
+        status_text.text("🔄 [2/3] Generating PySpark code…")
         try:
             py_gen = PySparkGenerator(max_iterations=max_iterations)
             pyspark_result = py_gen.generate_pyspark_code(
@@ -932,7 +932,7 @@ def main():
         progress_bar.progress(0.50)
 
         # ── Step C: Spark SQL ────────────────────────────────────────
-        status_text.text("🔄 [3/4] Generating Spark SQL…")
+        status_text.text("🔄 [3/3] Generating Spark SQL…")
         try:
             sql_gen = SparkSQLGenerator()
             sql_result = sql_gen.generate_sql(
@@ -945,26 +945,6 @@ def main():
             st.session_state["sql_result"] = sql_result
         except Exception as e:
             st.session_state["sql_result"] = {"ddl_sql": f"-- SQL generation failed: {e}", "view_sql": "", "select_sql": "", "column_exprs": {}}
-
-        progress_bar.progress(0.75)
-
-        # ── Step D: Unit Tests ───────────────────────────────────────
-        status_text.text("🔄 [4/4] Generating unit tests…")
-        try:
-            test_gen = TestGenerator()
-            scala_code = st.session_state["generated_result"].get("full_code", "")
-            pyspark_code = st.session_state["pyspark_result"].get("full_code", "")
-            test_result = test_gen.generate_tests(
-                input_columns=input_columns,
-                target_columns=target_columns,
-                transformation_logic=transformation_logic,
-                scala_code=scala_code if scala_code else None,
-                pyspark_code=pyspark_code if pyspark_code else None,
-                sample_records=sample_records if sample_records else None,
-            )
-            st.session_state["test_result"] = test_result
-        except Exception as e:
-            st.session_state["test_result"] = {"scala_tests": f"// Test generation failed: {e}", "pytest_tests": f"# Test generation failed: {e}"}
 
         progress_bar.progress(1.0)
         status_text.text("✅ All code generated successfully!")
@@ -1010,10 +990,13 @@ def main():
 
         st.session_state["pipeline_stage"] = "done"
 
-        # ── Save to history ──────────────────────────────────────────
+        # ── Save transformation_logic to session state so results tabs always have it ──
         st.session_state["last_transformation_logic"] = transformation_logic
         st.session_state["last_target_columns"] = target_columns
         st.session_state["last_input_columns"] = input_columns
+        st.session_state["last_sample_records"] = sample_records if sample_records else []
+
+        # ── Save to history ──────────────────────────────────────────
         history_entry = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "input_columns": input_columns,
@@ -1030,7 +1013,7 @@ def main():
 
         progress_bar.empty()
         status_text.empty()
-        st.rerun()
+        # NOTE: no st.rerun() here — preserves widget state for lineage + history display
 
 
     # ═══════════════════════════════════════════════════════════════════
@@ -1040,16 +1023,21 @@ def main():
     if result is None:
         return
 
-    pyspark_result = st.session_state.get("pyspark_result", {})
-    sql_result = st.session_state.get("sql_result", {})
-    test_result = st.session_state.get("test_result", {})
+    pyspark_result = st.session_state.get("pyspark_result") or {}
+    sql_result = st.session_state.get("sql_result") or {}
+    test_result = st.session_state.get("test_result") or {}
+
+    # Use saved copies so lineage/history survive page rerenders
+    saved_input_cols = st.session_state.get("last_input_columns") or input_columns
+    saved_target_cols = st.session_state.get("last_target_columns") or target_columns
+    saved_logic = st.session_state.get("last_transformation_logic") or transformation_logic
 
     st.markdown('<div class="success-banner">🎉 All Code Generated Successfully!</div>', unsafe_allow_html=True)
 
     # ── Metrics ──────────────────────────────────────────────────────
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        st.metric("🎯 Target Columns", len(target_columns) if target_columns else 0)
+        st.metric("🎯 Target Columns", len(saved_target_cols) if saved_target_cols else 0)
     with c2:
         st.metric("🔄 AI Rounds", result.get("iterations_used", "?"))
     with c3:
@@ -1191,6 +1179,26 @@ def main():
 
     # ── Tab 3: Unit Tests ─────────────────────────────────────────────
     with tabs[3]:
+        st.info("⚠️ Unit test generation is **on-demand** to stay within free API token limits.")
+        if st.button("🧪 Generate Unit Tests", key="btn_gen_tests"):
+            with st.spinner("Generating unit tests…"):
+                try:
+                    _test_gen = TestGenerator()
+                    _scala_code = st.session_state.get("generated_result", {}).get("full_code", "")
+                    _pyspark_code = st.session_state.get("pyspark_result", {}).get("full_code", "")
+                    _tr = _test_gen.generate_tests(
+                        input_columns=saved_input_cols,
+                        target_columns=saved_target_cols,
+                        transformation_logic=saved_logic,
+                        scala_code=_scala_code if _scala_code else None,
+                        pyspark_code=_pyspark_code if _pyspark_code else None,
+                    )
+                    st.session_state["test_result"] = _tr
+                    test_result = _tr
+                    st.success("✅ Unit tests generated!")
+                except Exception as _e:
+                    st.error(f"Test generation failed: {_e}")
+                    test_result = {}
         if test_result:
             test_sub = st.tabs(["🔬 ScalaTest", "🐍 pytest (PySpark)"])
             with test_sub[0]:
@@ -1219,8 +1227,6 @@ def main():
                     )
                 else:
                     st.info("pytest not generated.")
-        else:
-            st.info("Unit tests not yet generated.")
 
     # ── Tab 4: Data Quality ───────────────────────────────────────────
     with tabs[4]:
@@ -1259,14 +1265,14 @@ def main():
 
     # ── Tab 5: Data Lineage ───────────────────────────────────────────
     with tabs[5]:
-        if input_columns and target_columns:
+        if saved_input_cols and saved_target_cols:
             lineage_html = build_lineage_html(
-                input_columns=input_columns,
-                target_columns=target_columns,
-                transformation_logic=transformation_logic,
+                input_columns=saved_input_cols,
+                target_columns=saved_target_cols,
+                transformation_logic=saved_logic,
                 crosswalk_tables=st.session_state.get("crosswalk_tables"),
             )
-            diagram_height = max(400, max(len(input_columns), len(target_columns)) * 55 + 120)
+            diagram_height = max(400, max(len(saved_input_cols), len(saved_target_cols)) * 55 + 120)
             components.html(lineage_html, height=diagram_height, scrolling=True)
             st.caption(
                 "🔵 Blue = input columns  |  🟢 Green = output columns  |  🟡 Yellow = crosswalk tables  |  "
@@ -1297,7 +1303,7 @@ def main():
         if per_col:
             for col_name, snippet in per_col.items():
                 with st.expander("🔹 **{}**".format(col_name), expanded=True):
-                    logic_desc = transformation_logic.get(col_name, "")
+                    logic_desc = saved_logic.get(col_name, "")
                     if logic_desc:
                         st.caption("💬 *{}*".format(logic_desc))
                     st.code(snippet, language="scala")
@@ -1312,13 +1318,14 @@ def main():
         if sample_output:
             st.markdown("**Transformed sample records:**")
             st.dataframe(pd.DataFrame(sample_output), use_container_width=True)
-            if sample_records:
+            saved_samples = st.session_state.get("last_sample_records", [])
+            if saved_samples:
                 st.markdown("---")
                 st.markdown("#### 🔄 Side-by-Side Comparison")
                 col_in, col_out = st.columns(2)
                 with col_in:
                     st.markdown("**📥 Input**")
-                    st.dataframe(pd.DataFrame(sample_records), use_container_width=True)
+                    st.dataframe(pd.DataFrame(saved_samples), use_container_width=True)
                 with col_out:
                     st.markdown("**📤 Output**")
                     st.dataframe(pd.DataFrame(sample_output), use_container_width=True)
