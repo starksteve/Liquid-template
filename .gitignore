@@ -1,0 +1,42 @@
+# ── Secrets & environment ──────────────────────────────────────
+.env
+touch.env
+*.env
+.streamlit/secrets.toml
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ──────────────────────────────────────
+LiquidTemplate/
+venv/
+.venv/
+env/
+liquidgenerator_env/
+
+# ── IDE ────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Build / dist ──────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ── Jupyter ───────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Generated output files ────────────────────────────────────
+templates/*.liquid

@@ -1,0 +1,6 @@
+MemberID,FirstName,LastName,Gender,DOB,ProviderName,ProviderSpecialty,Condition,Treatment,AdmissionDate,DischargeDate  
+1001,Aaliyah,Nguyen,Female,3/22/87,Dr. Priya Shah,Cardiology,Hypertension,Amlodipine,3/12/24,3/15/24
+1002,Diego,Martinez,Male,10/15/90,Dr. Kevin O'Malley,Endocrinology,Type 2 Diabetes,Insulin Therapy,5/1/24,5/7/24
+1003,Fatima,Al-Farsi,Female,6/30/75,Dr. Ming Zhao,Orthopedics,Fractured Tibia,Open Reduction and Internal Fixation,6/10/24,6/21/24
+1004,Marcus,Okafor,Male,12/5/02,Dr. Laura Kline,Pediatrics,Asthma,Inhaled Corticosteroids,4/18/24,4/20/24
+1005,Sofia,Rossi,Female,8/14/68,Dr. Ahmed El-Tayeb,Oncology,Breast Cancer,Radiation Therapy,2/15/24,3/5/24

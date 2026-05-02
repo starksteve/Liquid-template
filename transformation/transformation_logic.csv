@@ -1,0 +1,14 @@
+Transformation logic,,
+,,
+SOURCE,TARGET,TRANSFORMATION LOGIC
+Name,FirstName,The first name has to be extract from  Name in source value
+Name,LastName,The Last name has to be extract from  Name in source value
+Gender,GEN,"if source value is Female, it should be replaced by 'WOMAN' in target; if source value is Male, it should be replaced by 'MAN' in target"
+DOB,AGE,Age has to be calculated from DOB in source
+ProviderSpecialty,ProviderSpecialty,"The value has to be converted into an abbreviated form as below:
+if source value = 'Cardiology' target value = 'CD'
+if source value = 'Endocrinology' target value = 'END'
+if source value = 'Orthopedics' target value = 'ORTH'
+if source value = 'Pediatrics' target value = 'PD'
+if source value = 'Oncology' target value = 'ONC'
+else target value = 'OTH'"
